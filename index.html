@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeMirror Example</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+  <style>
+    .CodeMirror {
+      border: 1px solid black;
+      height: 600px;
+    }
+
+    /* Custom background color for marked text */
+    .custom-highlight {
+      background-color: red; /* Change the color to whatever you want */
+    }
+  </style>
+</head>
+<body>
+
+
+  <h2>Code Editor</h2>
+  <textarea id="editor"></textarea>
+  <p>Keystrokes to reach marked position: <span id="keystroke-count">0</span></p>
+  <p>Average score: <span id="score">0</span></p>
+
+<!-- CodeMirror Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<!-- CodeMirror Vim Keymap -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/keymap/vim.js"></script>
+<!-- CodeMirror Mode for JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.js"></script>
+<!-- CodeMirror Bracket Matching Addon -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/matchbrackets.js"></script>
+<!-- CodeMirror Search Addons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/search/searchcursor.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/search/search.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/dialog/dialog.css"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/dialog/dialog.js"></script>
+
+<script>
+  // Initialize CodeMirror editor
+  var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+    lineNumbers: true,
+    mode: "javascript",
+    keyMap: "vim",
+    matchBrackets: true,
+    extraKeys: {
+      // Bind / and ? to search commands in Vim mode
+      "Ctrl-F": "findPersistent",
+      "Ctrl-H": "replacePersistent"
+    }
+  });
+
+    // Variables to track the keystrokes and score
+    let keystrokes = 0;
+  let totalKeystrokes = 0;
+  let attempts = 0;
+  let randomCoord;
+
+
+  // Insert text into the editor
+  editor.setValue("\
+public class RandomJavaCode {\n\
+\n\
+  public static void main(String[] args) {\n\
+    int[] numbers = {5, 10, 15, 20, 25};\n\
+    int result = sumArray(numbers);\n\
+    System.out.println(\"Sum of the array: \" + result);\n\
+\n\
+    String word = \"HelloWorld\";\n\
+    if (isPalindrome(word)) {\n\
+      System.out.println(word + \" is a palindrome.\");\n\
+    } else {\n\
+    System.out.println(word + \" is not a palindrome.\");\n\
+    }\n\
+  }\n\
+\n\
+  public static int sumArray(int[] arr) {\n\
+    int sum = 0;\n\
+    for (int num : arr) {\n\
+      sum += num;\n\
+    }\n\
+    return sum;\n\
+  }\n\
+\n\
+  public static boolean isPalindrome(String str) {\n\
+    String reverse = new StringBuilder(str).reverse().toString();\n\
+    return str.equals(reverse);\n\
+  }\n\
+}\n\
+")
+
+// Function to get a random valid coordinate
+function getRandomValidCoordinate() {
+    const totalLines = editor.lineCount();
+    let line, ch, lineText;
+
+    do {
+      // Select a random line with non-whitespace characters
+      line = Math.floor(Math.random() * totalLines);
+      lineText = editor.getLine(line);
+    } while (!lineText.trim());
+
+    do {
+      // Select a random character within the line
+      ch = Math.floor(Math.random() * lineText.length);
+    } while (/\s/.test(lineText.charAt(ch))); // Skip whitespace
+
+    return { line, ch };
+  }
+
+  // Function to highlight the random coordinate
+  function highlightRandomCoordinate() {
+    const coord = getRandomValidCoordinate();
+    editor.markText(
+      { line: coord.line, ch: coord.ch },
+      { line: coord.line, ch: coord.ch + 1 },
+      { className: "custom-highlight" }
+    );
+    return coord;
+  }
+
+    // Function to clear all marks (unhighlight)
+    function clearHighlights() {
+    const marks = editor.getAllMarks();
+    marks.forEach(mark => mark.clear());
+  }
+
+  // Highlight the initial random coordinate
+  randomCoord = highlightRandomCoordinate();
+
+  // Listen to key events and count keystrokes
+  editor.on("keydown", function () {
+    keystrokes++;
+    document.getElementById("keystroke-count").innerText = keystrokes;
+  });
+
+  // Monitor cursor activity to detect when the user reaches the marked cursor
+  editor.on("cursorActivity", function() {
+    const cursor = editor.getCursor();
+
+    if (cursor.line === randomCoord.line && cursor.ch === randomCoord.ch) {
+      // User reached the marked position
+      attempts++;
+      totalKeystrokes += keystrokes;
+
+      // Calculate average score
+      const averageScore = totalKeystrokes / attempts;
+      document.getElementById("score").innerText = averageScore.toFixed(2);
+
+      clearHighlights();
+
+      // Reset keystrokes and highlight a new random coordinate
+      keystrokes = 0;
+      randomCoord = highlightRandomCoordinate();
+    }
+  });
+
+</script>
+
+</body>
+</html>
